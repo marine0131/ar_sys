@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+    <include file='$(find ar_sys)/launch/single_board.launch' />
+
+    <node pkg='nav_goal' type='aruco_pose_adjust.py' name='aruco_pose_adjust' output='screen'>
+        <param name='~frequency' type='double' value='3.0' />
+        <remap from='/cmd_vel' to='/smoother_cmd_vel'/>
+    </node>
+</launch>

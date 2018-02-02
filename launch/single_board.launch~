@@ -3,27 +3,27 @@
 <launch>
 	<arg name="camera_enable" default="true"/>
 	<arg name="camera_device" default="/dev/video0"/>
-    <arg name="camera_info" default="file://$(find uvc_camera)/calibration/ccd_3142_160/ost.yaml"/>
+    <arg name="camera_info" default="file://$(find uvc_camera)/calibration/usbfhd01m/ost.yaml"/>
 	<arg name="camera_frame_id" default="bottom_cam"/>
 	<arg name="frame_id" default="bottom_cam"/>
 	<arg name="camera_width" default="640"/>
 	<arg name="camera_height" default="480" />
-	<arg name="camera_fps"  default="100"/>
+	<arg name="camera_fps"  default="30"/>
     <arg name="skip_frames" value="0" />
     <arg name="format" value="yuyv" />
-	<arg name="brightness" value="5" />
+	<arg name="brightness" value="200" />
 
 	<arg name="result_display" default="true"/>
 	<arg name="result_autosize" default="true"/>
 	<arg name="result_draw_markers" default="false" />
-	<arg name="result_draw_markers_cube" default="true" />
+	<arg name="result_draw_markers_cube" default="false" />
 	<arg name="result_draw_markers_axis" default="false" />
 
 	<arg name="uid" default=""/>
 	<arg name="video_namespace" default="/bottom_cam"/>
-    <arg name="video_image_topic" default="/image_raw"/>
+	<arg name="video_image_topic" default="image_rect_color"/>
 	<arg name="video_info_topic" default="camera_info"/>
-	<arg name="video_rectified" default="false" />
+	<arg name="video_rectified" default="true" />
 
 	<arg name="board_config" default="$(find ar_sys)/data/single/board_3x3.yml" />
 	<arg name="board_frame_id" default="board1" />
@@ -32,7 +32,7 @@
 
 
 	<group if="$(arg camera_enable)">
-		<!--node ns="$(arg video_namespace)" pkg="image_proc" type="image_proc" name="image_proc$(arg uid)" /-->
+		<node ns="$(arg video_namespace)" pkg="image_proc" type="image_proc" name="image_proc$(arg uid)" />
 		<node ns="$(arg video_namespace)" pkg="uvc_camera" type="uvc_camera_node" name="uvc_camera$(arg uid)" output="screen">
 			<param name="width" type="int" value="$(arg camera_width)" />
 			<param name="height" type="int" value="$(arg camera_height)" />
@@ -44,7 +44,6 @@
             <param name="frame_id" type="string" value="$(arg frame_id)" />
             <param name="format" type="string" value="$(arg format)" />
             <param name="brightness" type="int" value="$(arg brightness)" />
-
 		</node>
 	</group>
 
@@ -62,15 +61,14 @@
         <param name="publish_tf" value="$(arg publish_tf)" />
 	</node>
 
-    <!--node pkg="image_transport" type="republish" name="republish" args="compressed in:=/bottom_cam/image_raw raw out:=/bottom_cam/image_raw _image_transport:=compressed"/-->
-	<!--node ns="/" pkg="topic_tools" type="relay" name="ar_single_board_relay$(arg uid)" args="/ar_single_board$(arg uid)/transform /arsys_single_board/transform" /-->
+	<node ns="/" pkg="topic_tools" type="relay" name="ar_single_board_relay$(arg uid)" args="/ar_single_board$(arg uid)/transform /arsys_single_board/transform" />
 
-	<!--group if="$(arg result_display)">
+	<group if="$(arg result_display)">
 		<node ns="/" pkg="image_view" type="image_view" name="image_view$(arg uid)" output="screen">
 			<remap from="image" to="/ar_single_board$(arg uid)/result" />
 
 			<param name="autosize" type="bool" value="$(arg result_autosize)" />
 		</node>
-	</group-->
+	</group>
 
 </launch>

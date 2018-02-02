@@ -49,7 +49,8 @@ MarkerDetector::MarkerDetector()
 {
     _doErosion=false; 
     _thresMethod=ADPT_THRES;
-    _thresParam1=_thresParam2=7;
+    _thresParam1=50;
+    _thresParam2=0;
     _cornerMethod=LINES;
     _markerWarpSize=56;
     _speed=0;
@@ -123,11 +124,25 @@ void MarkerDetector::detect ( const  cv::Mat &input,vector<Marker> &detectedMark
 {
 
 
+    cv::imwrite("/home/agv/raw.jpg", input);
     //it must be a 3 channel image
     if ( input.type() ==CV_8UC3 )   cv::cvtColor ( input,grey,CV_BGR2GRAY );
     else     grey=input;
 
+    unevenlightCompensate(grey, 32);
 
+    for(int y=0; y<grey.rows; y++)
+    {
+        for(int x=0; x<grey.cols; x++)
+        {
+            for(int c=0; c<1; c++)
+            {
+                grey.at<Vec3b>(y,x)[c]=saturate_cast<uchar>(2.0*(grey.at<Vec3b>(y,x)[c]-140) + 40);
+            }
+        }
+    }
+
+    cv::imwrite("/home/agv/grey.jpg", grey);
 //     cv::cvtColor(grey,_ssImC ,CV_GRAY2BGR); //DELETE
 
     //clear input data
@@ -160,6 +175,8 @@ void MarkerDetector::detect ( const  cv::Mat &input,vector<Marker> &detectedMark
         erode ( thres,thres2,cv::Mat() );
         thres2.copyTo(thres); //vs thres=thres2;
     }
+    //cv::imwrite("/home/agv/erosion.jpg", thres);
+
     //find all rectangles in the thresholdes image
     vector<MarkerCandidate > MarkerCanditates;
     detectRectangles ( thres,MarkerCanditates );
@@ -447,7 +464,7 @@ void MarkerDetector::thresHold ( int method,const Mat &grey,Mat &out,double para
         if ( param1<3 ) param1=3;
         else if ( ( ( int ) param1 ) %2 !=1 ) param1= ( int ) ( param1+1 );
 
-        cv::adaptiveThreshold ( grey,out,255,ADAPTIVE_THRESH_MEAN_C,THRESH_BINARY_INV,param1,param2 );
+        cv::adaptiveThreshold ( grey,out,255,ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY_INV,param1,param2 );
         break;
     case CANNY:
     {
@@ -1042,5 +1059,35 @@ void MarkerDetector::setWarpSize(int val) throw(cv::Exception)
 }
 
 
+void MarkerDetector::unevenlightCompensate(cv::Mat &image, int blockSize)
+{
+    if (image.channels() == 3) cvtColor(image, image, 7);
+    double average = mean(image)[0];
+    int rows_new = ceil(double(image.rows) / double(blockSize));
+    int cols_new = ceil(double(image.cols) / double(blockSize));
+    Mat blockImage;
+    blockImage = Mat::zeros(rows_new, cols_new, CV_32FC1);
+    for (int i = 0; i < rows_new; i++)
+    {
+            for (int j = 0; j < cols_new; j++)
+            {
+                        int rowmin = i*blockSize;
+                        int rowmax = (i + 1)*blockSize;
+                        if (rowmax > image.rows) rowmax = image.rows;
+                        int colmin = j*blockSize;
+                        int colmax = (j + 1)*blockSize;
+                        if (colmax > image.cols) colmax = image.cols;
+                        Mat imageROI = image(Range(rowmin, rowmax), Range(colmin, colmax));
+                        double temaver = mean(imageROI)[0];
+                        blockImage.at<float>(i, j) = temaver;
+                    }
+        }
+    blockImage = blockImage - average;
+    Mat blockImage2;
+    resize(blockImage, blockImage2, image.size(), (0, 0), (0, 0), INTER_CUBIC);
+    Mat image2;
+    image.convertTo(image2, CV_32FC1);
+    Mat dst = image2 - blockImage2;
+    dst.convertTo(image, CV_8UC1);
+}
 };
-

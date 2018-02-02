@@ -368,10 +368,11 @@ private:
      for(size_t i=0;i<vv.size();i++)
        for(size_t j=0;j<vv[i].size();j++) v.push_back(vv[i][j]);
     }
+
+    // added by whj
+    void unevenlightCompensate(cv::Mat &image, int blockSize);
+
 };
-
-
-
 
 };
 #endif
